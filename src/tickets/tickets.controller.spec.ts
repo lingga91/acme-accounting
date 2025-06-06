@@ -9,6 +9,7 @@ import {
 import { User, UserRole } from '../../db/models/User';
 import { DbModule } from '../db.module';
 import { TicketsController } from './tickets.controller';
+import { ManagementReportService,RegistrationAddressChangeService,StrikeOffService } from './tickets.service';
 
 describe('TicketsController', () => {
   let controller: TicketsController;
@@ -16,6 +17,11 @@ describe('TicketsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TicketsController],
+      providers: [
+        ManagementReportService,
+        RegistrationAddressChangeService,
+        StrikeOffService
+      ],
       imports: [DbModule],
     }).compile();
 
