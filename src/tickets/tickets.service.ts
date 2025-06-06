@@ -104,7 +104,7 @@ export class RegistrationAddressChangeService extends TicketService {
 
             if (!assignees.length)
                 throw new ConflictException(
-                    `Cannot find user with role ${userRole} to create a ticket`,
+                    `Cannot find user with role ${userRole} or ${UserRole.director} to create a ticket`,
                 );
         }
 

@@ -163,7 +163,7 @@ describe('TicketsController', () => {
         );
       });
 
-      it('if there is no secretary, throw', async () => {
+      it('if there is no secretary and director, throw', async () => {
         const company = await Company.create({ name: 'test' });
 
         await expect(
@@ -173,10 +173,11 @@ describe('TicketsController', () => {
           }),
         ).rejects.toEqual(
           new ConflictException(
-            `Cannot find user with role corporateSecretary to create a ticket`,
+            `Cannot find user with role corporateSecretary or director to create a ticket`,
           ),
         );
       });
+
     });
   });
 });
