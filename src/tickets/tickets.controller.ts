@@ -7,102 +7,52 @@ import {
   TicketType,
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
+import { 
+  ManagementReportService,
+  RegistrationAddressChangeService,
+  StrikeOffService,
+  TicketDto,
+  newTicketDto 
 
-interface newTicketDto {
-  type: TicketType;
-  companyId: number;
-}
+} from './tickets.service';
 
-interface TicketDto {
-  id: number;
-  type: TicketType;
-  companyId: number;
-  assigneeId: number;
-  status: TicketStatus;
-  category: TicketCategory;
-}
 
 @Controller('api/v1/tickets')
 export class TicketsController {
+
+  constructor(
+    private readonly managementReportService: ManagementReportService,
+    private readonly registrationAddressChangeService: RegistrationAddressChangeService,
+    private readonly strikeOffService: StrikeOffService
+    ) {}
+
   @Get()
   async findAll() {
-    return await Ticket.findAll({ include: [Company, User] });
+    return await Ticket.findAll({ include: [Company, User] });     
   }
 
   @Post()
-  async create(@Body() newTicketDto: newTicketDto) {
+  async create(@Body() newTicketDto: newTicketDto):Promise<TicketDto> {
     const { type, companyId } = newTicketDto;
+    let ticketDto;
 
-    const category =
-      type === TicketType.managementReport
-        ? TicketCategory.accounting
-        : TicketCategory.corporate;
+    switch(type){
 
-    let userRole =
-      type === TicketType.managementReport
-        ? UserRole.accountant
-        : UserRole.corporateSecretary;
-    
-    
-
-    let assignees = await User.findAll({
-      where: { companyId, role: userRole },
-      order: [['createdAt', 'DESC']],
-    });
-
-
-    if (type === TicketType.registrationAddressChange ){
-
-      //check this type ticket exist
-      const ticketExist = await Ticket.findOne({ 
-        where: { type: TicketType.registrationAddressChange }
-      });
-
-      if(ticketExist){
-        throw new ConflictException(
-          `A ticket with this category already exist. Cannot create a ticket`,  
-        );
-      }
-
-      // check assignee exist
-      if (!assignees.length){
-        userRole = UserRole.director; //reset the role to director
-        assignees = await User.findAll({ //find new assignee
-          where: { companyId, role: userRole },
-          order: [['createdAt', 'DESC']],
-        });
-      }
-    }
-
-    if (!assignees.length)
-      throw new ConflictException(
-        `Cannot find user with role ${userRole} to create a ticket`,
-      );
+      case TicketType.managementReport:
+          ticketDto = await this.managementReportService.create(companyId);
+          break;
       
-    if ( (userRole === UserRole.corporateSecretary || userRole === UserRole.director) && assignees.length > 1)
-      throw new ConflictException(
-        `Multiple users with role ${userRole}. Cannot create a ticket`,
-      );
-
-    const assignee = assignees[0];
-
-    const ticket = await Ticket.create({
-      companyId,
-      assigneeId: assignee.id,
-      category,
-      type,
-      status: TicketStatus.open,
-    });
-
-    const ticketDto: TicketDto = {
-      id: ticket.id,
-      type: ticket.type,
-      assigneeId: ticket.assigneeId,
-      status: ticket.status,
-      category: ticket.category,
-      companyId: ticket.companyId,
-    };
-
+      case TicketType.registrationAddressChange:
+          ticketDto = await this.registrationAddressChangeService.create(companyId);
+          break;
+      
+      case TicketType.strikeOff:
+          ticketDto = await this.strikeOffService.create(companyId);
+          break;
+      
+    }
+    
     return ticketDto;
+    
   }
 }
