@@ -1,4 +1,4 @@
-import { Body, ConflictException, Controller, Get, Post } from '@nestjs/common';
+import { Body, ConflictException,BadRequestException, Controller, Get, Post } from '@nestjs/common';
 import { Company } from '../../db/models/Company';
 import {
   Ticket,
@@ -42,6 +42,19 @@ export class TicketsController {
       type === TicketType.managementReport
         ? UserRole.accountant
         : UserRole.corporateSecretary;
+    
+    //check for duplicate ticket of registrationAddressChange
+    if (type === TicketType.registrationAddressChange ){
+      const ticketExist = await Ticket.findOne({ 
+        where: { type: TicketType.registrationAddressChange }
+      });
+
+      if(ticketExist){
+        throw new BadRequestException(
+          `This ticket type already exist`,  
+        );
+      }
+    }
 
     const assignees = await User.findAll({
       where: { companyId, role: userRole },
