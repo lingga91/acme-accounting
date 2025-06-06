@@ -77,7 +77,7 @@ export class RegistrationAddressChangeService extends TicketService {
     async create(companyId: number): Promise<TicketDto> {
         
         const category = TicketCategory.corporate;
-        let userRole = UserRole.corporateSecretary;
+        const userRole = UserRole.corporateSecretary;
         const type = TicketType.registrationAddressChange;
 
         const ticketExist = await Ticket.findOne({ 
@@ -97,9 +97,8 @@ export class RegistrationAddressChangeService extends TicketService {
 
         if (!assignees.length){
 
-            userRole = UserRole.director; //reset the role to director
             assignees = await User.findAll({ //find user of role director
-                where: { companyId, role: userRole },
+                where: { companyId, role: UserRole.director },
                 order: [['createdAt', 'DESC']],
             });
 
