@@ -1,4 +1,4 @@
-import { Body, ConflictException,BadRequestException, Controller, Get, Post } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, Post } from '@nestjs/common';
 import { Company } from '../../db/models/Company';
 import {
   Ticket,
@@ -38,35 +38,48 @@ export class TicketsController {
         ? TicketCategory.accounting
         : TicketCategory.corporate;
 
-    const userRole =
+    let userRole =
       type === TicketType.managementReport
         ? UserRole.accountant
         : UserRole.corporateSecretary;
     
-    //check for duplicate ticket of registrationAddressChange
+    
+
+    let assignees = await User.findAll({
+      where: { companyId, role: userRole },
+      order: [['createdAt', 'DESC']],
+    });
+
+
     if (type === TicketType.registrationAddressChange ){
+
+      //check this type ticket exist
       const ticketExist = await Ticket.findOne({ 
         where: { type: TicketType.registrationAddressChange }
       });
 
       if(ticketExist){
-        throw new BadRequestException(
-          `This ticket type already exist`,  
+        throw new ConflictException(
+          `A ticket with this category already exist. Cannot create a ticket`,  
         );
       }
-    }
 
-    const assignees = await User.findAll({
-      where: { companyId, role: userRole },
-      order: [['createdAt', 'DESC']],
-    });
+      // check assignee exist
+      if (!assignees.length){
+        userRole = UserRole.director; //reset the role to director
+        assignees = await User.findAll({ //find new assignee
+          where: { companyId, role: userRole },
+          order: [['createdAt', 'DESC']],
+        });
+      }
+    }
 
     if (!assignees.length)
       throw new ConflictException(
         `Cannot find user with role ${userRole} to create a ticket`,
       );
-
-    if (userRole === UserRole.corporateSecretary && assignees.length > 1)
+      
+    if ( (userRole === UserRole.corporateSecretary || userRole === UserRole.director) && assignees.length > 1)
       throw new ConflictException(
         `Multiple users with role ${userRole}. Cannot create a ticket`,
       );
