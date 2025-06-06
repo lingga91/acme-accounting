@@ -77,7 +77,7 @@ export class RegistrationAddressChangeService extends TicketService {
     async create(companyId: number): Promise<TicketDto> {
         
         const category = TicketCategory.corporate;
-        const userRole = UserRole.corporateSecretary;
+        let userRole = UserRole.corporateSecretary;
         const type = TicketType.registrationAddressChange;
 
         const ticketExist = await Ticket.findOne({ 
@@ -106,6 +106,8 @@ export class RegistrationAddressChangeService extends TicketService {
                 throw new ConflictException(
                     `Cannot find user with role ${userRole} or ${UserRole.director} to create a ticket`,
                 );
+            
+            userRole = UserRole.director
         }
 
         if (assignees.length > 1)
